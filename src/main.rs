@@ -7,7 +7,7 @@ struct Todo {
 
 impl Todo {
     fn new() -> Result<Todo, Error> {
-        let mut openOptions = OpenOptions::new()
+        let open_options = OpenOptions::new()
         .write(true)
         .create(true)
         .read(true)
@@ -15,7 +15,7 @@ impl Todo {
 
         let mut content = String::new();
 
-        openOptions.unwrap().read_to_string(&mut content)?;
+        open_options.unwrap().read_to_string(&mut content)?;
 
         // let map: HashMap<String, bool> = content
         // .lines()
@@ -67,6 +67,17 @@ impl Todo {
         }
         write("db.txt", content)
     }
+
+    fn complete(&mut self, key: &String) -> Option<()> {
+        // "get_mut" will give us a mutable reference to the value of key, or None if the value
+        // is not present in the collection.
+        match self.map.get_mut(key) {
+            // We use "*" operator to de-reference the value and set it to false
+            // isso seta o valor (direto no hash original) da chave como "false"
+            Some(value) => Some(*value = false),
+            None => None,
+        }
+    }
 }
 
 fn main() {
@@ -80,6 +91,14 @@ fn main() {
         match todo.save() {
             Ok(_) => println!("todo saved"),
             Err(why) => println!("An error occurred: {}", why),
+        }
+    } else if action == "complete" {
+        match todo.complete(&item) {
+            None => println!("'{}' is not present in the list", item),
+            Some(_) => match todo.save() {
+                Ok(_) => println!("todo saved"),
+                Err(why) => println!("An error occurred: {}", why),
+            }
         }
     }
 }
