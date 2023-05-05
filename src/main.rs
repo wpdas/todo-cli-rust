@@ -1,10 +1,7 @@
+use serde_json::{from_reader, to_writer_pretty};
 use std::collections::HashMap;
-use std::io::Error;
 use std::fs::OpenOptions;
-use serde_json::{
-    from_reader,
-    to_writer_pretty,
-};
+use std::io::Error;
 
 struct Todo {
     // use rust built in HashMap to store key - val pairs
@@ -14,15 +11,17 @@ struct Todo {
 impl Todo {
     fn new() -> Result<Todo, Error> {
         let file = OpenOptions::new()
-        .write(true)
-        .create(true)
-        .read(true)
-        .open("db.json")?;
+            .write(true)
+            .create(true)
+            .read(true)
+            .open("db.json")?;
 
         // serialize json has HashMap
         match from_reader(file) {
             Ok(map) => Ok(Todo { map }),
-            Err(error) if error.is_eof() => Ok(Todo { map: HashMap:: new(), }),
+            Err(error) if error.is_eof() => Ok(Todo {
+                map: HashMap::new(),
+            }),
             Err(error) => panic!("An error ocurred: {}", error),
         }
     }
@@ -40,9 +39,9 @@ impl Todo {
     fn save(self) -> Result<(), Box<dyn std::error::Error>> {
         // open db.json
         let file = OpenOptions::new()
-        .write(true)
-        .create(true)
-        .open("db.json")?;
+            .write(true)
+            .create(true)
+            .open("db.json")?;
 
         // write to file with serde
         to_writer_pretty(file, &self.map)?;
@@ -79,7 +78,7 @@ fn main() {
             Some(_) => match todo.save() {
                 Ok(_) => println!("todo saved"),
                 Err(why) => println!("An error occurred: {}", why),
-            }
+            },
         }
     }
 }
