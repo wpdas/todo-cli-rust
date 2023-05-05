@@ -1,4 +1,10 @@
-use std::{collections::HashMap, io::{Error, Read}, fs::{write, OpenOptions}, str::FromStr};
+use std::collections::HashMap;
+use std::io::Error;
+use std::fs::OpenOptions;
+use serde_json::{
+    from_reader,
+    to_writer_pretty,
+};
 
 struct Todo {
     // use rust built in HashMap to store key - val pairs
@@ -7,46 +13,18 @@ struct Todo {
 
 impl Todo {
     fn new() -> Result<Todo, Error> {
-        let open_options = OpenOptions::new()
+        let file = OpenOptions::new()
         .write(true)
         .create(true)
         .read(true)
-        .open("db.txt");
+        .open("db.json")?;
 
-        let mut content = String::new();
-
-        open_options.unwrap().read_to_string(&mut content)?;
-
-        // let map: HashMap<String, bool> = content
-        // .lines()
-        // // get each line and converts to an vector of strings [["pegar o lixo", "true"]...]
-        // .map(|line| line.splitn(2, '\t').collect::<Vec<&str>>())
-        // // transform to tuples (key, value) => [("pegar o lixo", "true")...]
-        // .map(|v| (v[0], v[1]))
-        // // get each tuple's values and convert it back to a HashMap of <String, Bool> with the given values (k, v)
-        // .map(|(k, v)| (String::from(k), bool::from_str(v).unwrap()))
-        // .collect();
-
-        // Ok(Todo {map})
-
-        // OR SIMPLER
-
-        // allocate an empty HashMap
-        let mut map = HashMap::new();
-
-        // loop over each lines of the file
-        for entries in content.lines() {
-            // split and bind values
-            let mut values = entries.split('\t');
-            let key = values.next().expect("No Key");
-            let value = values.next().expect("No Value");
-
-            // insert them into HashMap
-            map.insert(String::from(key), bool::from_str(value).unwrap());
+        // serialize json has HashMap
+        match from_reader(file) {
+            Ok(map) => Ok(Todo { map }),
+            Err(error) if error.is_eof() => Ok(Todo { map: HashMap:: new(), }),
+            Err(error) => panic!("An error ocurred: {}", error),
         }
-
-        // Return Ok
-        Ok(Todo {map})
     }
 
     // "mut" makes a variable mutable.
@@ -59,13 +37,16 @@ impl Todo {
         self.map.insert(key, true);
     }
 
-    fn save(self) -> Result<(), Error> {
-        let mut content = String::new();
-        for (key, value) in self.map {
-            let record = format!("{}\t{}\n", key, value);
-            content.push_str(&record);
-        }
-        write("db.txt", content)
+    fn save(self) -> Result<(), Box<dyn std::error::Error>> {
+        // open db.json
+        let file = OpenOptions::new()
+        .write(true)
+        .create(true)
+        .open("db.json")?;
+
+        // write to file with serde
+        to_writer_pretty(file, &self.map)?;
+        Ok(())
     }
 
     fn complete(&mut self, key: &String) -> Option<()> {
